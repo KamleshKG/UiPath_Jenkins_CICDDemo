@@ -33,7 +33,7 @@ pipeline {
 	
 
 	         // Build Stages
-	        stage('Build') {
+	        stage('Test') {
 	            steps {
 	                echo "Building..with ${WORKSPACE}"
 	                UiPathPack (
