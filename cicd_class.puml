@@ -1,0 +1,74 @@
+'@startuml
+'class CodeRepository {
+'  +commitCode()
+'}
+'
+'class BuildJob {
+'  +runTests()
+'  +analyzeCode()
+'  +buildImage()
+'  +configureInfra()
+'  +deploy()
+'}
+'
+'class ReleaseManager {
+'  +approveRelease()
+'  +promoteRelease()
+'}
+'
+'class DeploymentEnvironment {
+'  +deployApplication()
+'  +runTests()
+'}
+'
+'CodeRepository --* BuildJob
+'BuildJob --* ReleaseManager
+'BuildJob --* DeploymentEnvironment
+'
+'
+
+@startuml
+class CodeRepository {
+  +commitCode()
+}
+
+class BuildJob {
+  +runTests()
+  +analyzeCode()
+  +buildImage()
+  +configureInfra()
+  +deploy()
+  +triggerAutoRollback()
+}
+
+class ReleaseManager {
+  +approveRelease()
+  +promoteRelease()
+}
+
+class DeploymentEnvironment {
+  +deployApplication()
+  +runTests()
+  +monitorEnvironment()
+  +alertOnFailure()
+  +rollback()
+}
+
+class MonitoringSystem {
+  +monitor(environment: DeploymentEnvironment)
+  +detectFailure(environment: DeploymentEnvironment): boolean
+}
+
+class AlertingSystem {
+  +sendAlert(message: string)
+}
+
+CodeRepository --* BuildJob
+BuildJob --* ReleaseManager
+BuildJob --* DeploymentEnvironment
+DeploymentEnvironment --* MonitoringSystem
+DeploymentEnvironment --* AlertingSystem
+
+MonitoringSystem --* AlertingSystem
+
+@enduml

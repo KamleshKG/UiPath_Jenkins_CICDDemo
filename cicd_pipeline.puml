@@ -1,0 +1,160 @@
+'@startuml
+'start
+'
+':Developer Commits Code to Bitbucket;
+'
+'partition Bitbucket {
+'  :Code Repository (Bitbucket);
+'}
+'
+':Jenkins Triggers Build;
+'
+'partition Jenkins {
+'  :Jenkins Server;
+'}
+'
+':Check Code Type (Java/.NET);
+'
+'if (Java Code?) then (yes)
+'  :Java JUnit/TestNG Tests;
+'else (no)
+'  :Dotnet NUnit/xUnit Tests;
+'endif
+'
+':Static Application Security Testing (SAST) - SonarQube/Checkstyle/FxCop;
+':Software Composition Analysis (SCA) - OWASP Dependency Check/Snyk;
+':Code Coverage Analysis (JaCoCo/Coverlet);
+':Container Security Scanning (Trivy/Clair);
+':Infrastructure as Code Security Scanning (Checkov/Terrascan);
+'
+':Select Deployment Target (Container/VM);
+'
+'if (Container Deployment?) then (yes)
+'  :Docker Build & Push;
+'else (no)
+'  :Ansible Configuration;
+'endif
+'
+':Terraform Infrastructure;
+':Artifact Repository (Nexus/Artifactory);
+'
+'partition XLR {
+'  :Release Management (XLR);
+'}
+'
+':XLR Release Approval;
+'
+'if (Approval Granted?) then (yes)
+'  :Deploy to Staging Environment (Container/VM);
+'  :Dynamic Application Security Testing (DAST) - OWASP ZAP/Burp Suite;
+'  :Performance Tests (JMeter/LoadRunner);
+'  :Security Tests (OWASP ZAP/Burp Suite);
+'  :Automated Integration Tests (Staging);
+'
+'  if (Integration/Performance/Security Tests Passed?) then (yes)
+'    :XLR Promote to Production;
+'    :Deploy to Production Environment (Container/VM);
+'    :Automated Smoke Tests (Production);
+'    :Runtime Application Self-Protection (RASP) - (If implemented);
+'    if (Smoke Tests Passed?) then (yes)
+'      :Release Complete;
+'      stop
+'    else (no)
+'      :Rollback Production;
+'      :Notify Team;
+'      stop
+'    endif
+'  else (no)
+'    :Rollback Staging;
+'    :Notify Team;
+'    stop
+'  endif
+'else (no)
+'  :Release Aborted;
+'  :Notify Team;
+'  stop
+'endif
+'
+'@en
+
+@startuml
+start
+
+:Developer Commits Code to Bitbucket;
+
+partition Bitbucket {
+  :Code Repository (Bitbucket);
+}
+
+:Jenkins Triggers Build;
+
+partition Jenkins {
+  :Jenkins Server;
+}
+
+:Check Code Type (Java/.NET);
+
+if (Java Code?) then (yes)
+  :Java JUnit/TestNG Tests;
+else (no)
+  :Dotnet NUnit/xUnit Tests;
+endif
+
+:Static Application Security Testing (SAST) - SonarQube/Checkstyle/FxCop;
+:Software Composition Analysis (SCA) - OWASP Dependency Check/Snyk;
+:Code Coverage Analysis (JaCoCo/Coverlet);
+:Container Security Scanning (Trivy/Clair);
+:Infrastructure as Code Security Scanning (Checkov/Terrascan);
+
+:Select Deployment Target (Container/VM);
+
+if (Container Deployment?) then (yes)
+  :Docker Build & Push;
+else (no)
+  :Ansible Configuration;
+endif
+
+:Terraform Infrastructure;
+:Artifact Repository (Nexus/Artifactory);
+
+partition XLR {
+  :Release Management (XLR);
+}
+
+:XLR Release Approval;
+
+if (Approval Granted?) then (yes)
+  :Deploy to Staging Environment (Container/VM);
+  :Dynamic Application Security Testing (DAST) - OWASP ZAP/Burp Suite;
+  :Performance Tests (JMeter/LoadRunner);
+  :Security Tests (OWASP ZAP/Burp Suite);
+  :Automated Integration Tests (Staging);
+
+  if (Integration/Performance/Security Tests Passed?) then (yes)
+    :XLR Promote to Production;
+    :Deploy to Production Environment (Container/VM);
+    :Automated Smoke Tests (Production);
+    :Runtime Application Self-Protection (RASP) - (If implemented);
+
+    if (Smoke Tests Passed?) then (yes)
+      :Release Complete;
+      stop
+    else (no)
+      :Auto-Detect Production Failure (Monitoring/Alerting);
+      :Auto-Rollback Production;
+      :Notify Team (Failure Details);
+      stop
+    endif
+  else (no)
+    :Auto-Detect Staging Failure (Monitoring/Alerting);
+    :Auto-Rollback Staging;
+    :Notify Team (Failure Details);
+    stop
+  endif
+else (no)
+  :Release Aborted;
+  :Notify Team;
+  stop
+endif
+
+@enduml

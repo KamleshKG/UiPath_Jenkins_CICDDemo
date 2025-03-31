@@ -1,0 +1,18 @@
+@startuml
+(*) --> "Jenkins Job Triggered"
+"Jenkins Job Triggered" --> "Jenkins Plugin Checks for cli.exe"
+"Jenkins Plugin Checks for cli.exe" --> "Check Jenkins Server Internet Access"
+"Check Jenkins Server Internet Access" --> decision1
+
+decision1 --> [Yes - Internet Access] "Jenkins Plugin Downloads cli.exe from UiPath Website"
+"Jenkins Plugin Downloads cli.exe from UiPath Website" --> "Run UiPath Jenkins Job using downloaded cli.exe"
+"Run UiPath Jenkins Job using downloaded cli.exe" --> (*)
+
+decision1 --> [No - No Internet Access] "Download cli.exe from UiPath Website (On Machine with Internet Access)"
+"Download cli.exe from UiPath Website (On Machine with Internet Access)" --> "Upload cli.exe to Internal Maven Repository/File Server"
+"Upload cli.exe to Internal Maven Repository/File Server" --> "Configure Jenkins Plugin pom.xml to use Internal Maven Repository/File Server"
+"Configure Jenkins Plugin pom.xml to use Internal Maven Repository/File Server" --> "Jenkins Job uses local cli.exe from internal resource"
+"Jenkins Job uses local cli.exe from internal resource" --> "Run UiPath Jenkins Job"
+"Run UiPath Jenkins Job" --> (*)
+
+@enduml

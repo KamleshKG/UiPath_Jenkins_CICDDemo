@@ -1,0 +1,129 @@
+'@startuml
+'package "CI/CD DevSecOps System" {
+'  [Bitbucket] as bitbucket
+'  [Jenkins] as jenkins
+'
+'  package "Code Analysis & Security" {
+'    [SonarQube/Checkstyle/FxCop (SAST)] as sast
+'    [OWASP Dependency Check/Snyk (SCA)] as sca
+'    [JaCoCo/Coverlet (Coverage)] as coverage
+'  }
+'
+'  package "Container & Infrastructure Security" {
+'    [Trivy/Clair (Container Scan)] as containerScan
+'    [Checkov/Terrascan (Terraform Scan)] as terraformScan
+'  }
+'
+'  package "Build & Deployment" {
+'    [Docker Registry] as dockerRegistry
+'    [Ansible] as ansible
+'    [Terraform] as terraform
+'    [Nexus/Artifactory] as artifactRepo
+'    [XLR (Release Management)] as xlr
+'  }
+'
+'  package "Staging & Testing" {
+'    [Staging Environment] as staging
+'    [OWASP ZAP/Burp Suite (DAST)] as dast
+'    [JMeter/LoadRunner (Performance)] as performance
+'  }
+'
+'  package "Production & Runtime Security" {
+'    [Production Environment] as production
+'    [RASP (Optional)] as rasp
+'  }
+'}
+'
+'bitbucket --> jenkins : Triggers Build
+'jenkins --> sast : SAST Analysis
+'jenkins --> sca : SCA Analysis
+'jenkins --> coverage : Coverage Analysis
+'jenkins --> containerScan : Container Scan
+'jenkins --> terraformScan : Terraform Scan
+'
+'jenkins --> dockerRegistry : Build & Push (Container)
+'jenkins --> ansible : Configuration (VM)
+'jenkins --> terraform : Infrastructure
+'
+'jenkins --> artifactRepo : Store Artifacts
+'jenkins --> xlr : Release Approval
+'
+'jenkins --> staging : Deploy to Staging
+'jenkins --> dast : DAST Analysis
+'jenkins --> performance : Performance Tests
+'jenkins --> staging : Integration Tests
+'
+'xlr --> production : Promote to Production
+'jenkins --> production : Deploy to Production
+'production --> rasp : Runtime Security (Optional)
+'@enduml
+
+@startuml
+package "CI/CD DevSecOps System" {
+  [Bitbucket] as bitbucket
+  [Jenkins] as jenkins
+
+  package "Code Analysis & Security" {
+    [SonarQube/Checkstyle/FxCop (SAST)] as sast
+    [OWASP Dependency Check/Snyk (SCA)] as sca
+    [JaCoCo/Coverlet (Coverage)] as coverage
+  }
+
+  package "Container & Infrastructure Security" {
+    [Trivy/Clair (Container Scan)] as containerScan
+    [Checkov/Terrascan (Terraform Scan)] as terraformScan
+  }
+
+  package "Build & Deployment" {
+    [Docker Registry] as dockerRegistry
+    [Ansible] as ansible
+    [Terraform] as terraform
+    [Nexus/Artifactory] as artifactRepo
+    [XLR (Release Management)] as xlr
+  }
+
+  package "Staging & Testing" {
+    [Staging Environment] as staging
+    [OWASP ZAP/Burp Suite (DAST)] as dast
+    [JMeter/LoadRunner (Performance)] as performance
+    [Monitoring (Staging)] as stagingMonitor
+    [Alerting (Staging)] as stagingAlert
+  }
+
+  package "Production & Runtime Security" {
+    [Production Environment] as production
+    [RASP (Optional)] as rasp
+    [Monitoring (Production)] as prodMonitor
+    [Alerting (Production)] as prodAlert
+  }
+}
+
+bitbucket --> jenkins : Triggers Build
+jenkins --> sast : SAST Analysis
+jenkins --> sca : SCA Analysis
+jenkins --> coverage : Coverage Analysis
+jenkins --> containerScan : Container Scan
+jenkins --> terraformScan : Terraform Scan
+
+jenkins --> dockerRegistry : Build & Push (Container)
+jenkins --> ansible : Configuration (VM)
+jenkins --> terraform : Infrastructure
+
+jenkins --> artifactRepo : Store Artifacts
+jenkins --> xlr : Release Approval
+
+jenkins --> staging : Deploy to Staging
+jenkins --> dast : DAST Analysis
+jenkins --> performance : Performance Tests
+jenkins --> staging : Integration Tests
+staging --> stagingMonitor : Monitoring
+stagingMonitor --> stagingAlert : Alert on Failure
+stagingAlert --> jenkins : Trigger Auto-Rollback
+
+xlr --> production : Promote to Production
+jenkins --> production : Deploy to Production
+production --> rasp : Runtime Security (Optional)
+production --> prodMonitor : Monitoring
+prodMonitor --> prodAlert : Alert on Failure
+prodAlert --> jenkins : Trigger Auto-Rollback
+@enduml

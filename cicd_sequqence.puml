@@ -1,0 +1,109 @@
+'@startuml
+'participant Developer
+'participant Bitbucket
+'participant Jenkins
+'participant SonarQube
+'participant Snyk
+'participant DockerRegistry
+'participant Ansible
+'participant Terraform
+'participant Nexus
+'participant XLR
+'participant Staging
+'participant ZAP
+'participant JMeter
+'participant Production
+'participant RASP
+'
+'Developer -> Bitbucket: Commit Code
+'Bitbucket -> Jenkins: Trigger Build
+'Jenkins -> Jenkins: Check Code Type
+'alt Java Code
+'  Jenkins -> Jenkins: JUnit/TestNG Tests
+'else .NET Code
+'  Jenkins -> Jenkins: NUnit/xUnit Tests
+'end
+'Jenkins -> SonarQube: SAST Analysis
+'Jenkins -> Snyk: SCA Analysis
+'Jenkins -> Jenkins: Coverage Analysis
+'Jenkins -> Jenkins: Container/Terraform Scan
+'alt Container Deployment
+'  Jenkins -> DockerRegistry: Build & Push
+'else VM Deployment
+'  Jenkins -> Ansible: Configure VM
+'end
+'Jenkins -> Terraform: Deploy Infrastructure
+'Jenkins -> Nexus: Store Artifacts
+'Jenkins -> XLR: Release Approval
+'XLR -> Jenkins: Approval Granted
+'Jenkins -> Staging: Deploy
+'Jenkins -> ZAP: DAST Analysis
+'Jenkins -> JMeter: Performance Tests
+'Jenkins -> Staging: Integration Tests
+'XLR -> Jenkins: Promote to Production
+'Jenkins -> Production: Deploy
+'Production -> RASP: Monitor (Optional)
+'@enduml
+
+@startuml
+participant Developer
+participant Bitbucket
+participant Jenkins
+participant SonarQube
+participant Snyk
+participant DockerRegistry
+participant Ansible
+participant Terraform
+participant Nexus
+participant XLR
+participant Staging
+participant ZAP
+participant JMeter
+participant Production
+participant RASP
+participant StagingMonitor
+participant StagingAlert
+participant ProdMonitor
+participant ProdAlert
+
+Developer -> Bitbucket: Commit Code
+Bitbucket -> Jenkins: Trigger Build
+Jenkins -> Jenkins: Check Code Type
+alt Java Code
+  Jenkins -> Jenkins: JUnit/TestNG Tests
+else .NET Code
+  Jenkins -> Jenkins: NUnit/xUnit Tests
+end
+Jenkins -> SonarQube: SAST Analysis
+Jenkins -> Snyk: SCA Analysis
+Jenkins -> Jenkins: Coverage Analysis
+Jenkins -> Jenkins: Container/Terraform Scan
+alt Container Deployment
+  Jenkins -> DockerRegistry: Build & Push
+else VM Deployment
+  Jenkins -> Ansible: Configure VM
+end
+Jenkins -> Terraform: Deploy Infrastructure
+Jenkins -> Nexus: Store Artifacts
+Jenkins -> XLR: Release Approval
+XLR -> Jenkins: Approval Granted
+Jenkins -> Staging: Deploy
+Jenkins -> ZAP: DAST Analysis
+Jenkins -> JMeter: Performance Tests
+Jenkins -> Staging: Integration Tests
+Staging -> StagingMonitor: Monitoring
+StagingMonitor -> StagingAlert: Alert on Failure
+alt Staging Failure
+  StagingAlert -> Jenkins: Trigger Auto-Rollback
+else Staging Success
+  XLR -> Jenkins: Promote to Production
+  Jenkins -> Production: Deploy
+  Production -> ProdMonitor: Monitoring
+  ProdMonitor -> ProdAlert: Alert on Failure
+  alt Production Failure
+    ProdAlert -> Jenkins: Trigger Auto-Rollback
+  else Production Success
+    Production -> RASP: Monitor (Optional)
+  end
+end
+@enduml
