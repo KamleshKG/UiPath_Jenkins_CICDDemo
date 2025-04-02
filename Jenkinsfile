@@ -53,16 +53,5 @@ pipeline {
 	        }
 	
   
-	
-
-	    // Options
-	    options {
-	        // Timeout for pipeline
-	        timeout(time:80, unit:'MINUTES')
-	        skipDefaultCheckout()
-	    }
-	
-
-
 	}
 }
