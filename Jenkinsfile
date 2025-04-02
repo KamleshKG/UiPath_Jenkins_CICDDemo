@@ -11,7 +11,7 @@ pipeline {
 	        UIPATH_ORCH_LOGICAL_NAME = "matrirkhltsf"
 	        UIPATH_ORCH_TENANT_NAME = "DefaultTenant"
 	        UIPATH_ORCH_FOLDER_NAME = "Shared"
-	    }
+	          }
 	
 
 	    stages {
@@ -52,37 +52,7 @@ pipeline {
 	            }
 	        }
 	
-
-	         // Deploy Stages
-	        stage('DEV') {
-	            steps {
-	                echo "Deploying ${BRANCH_NAME} to UAT "
-	                UiPathDeploy (
-	                packagePath: "Output\\${env.BUILD_NUMBER}",
-	                orchestratorAddress: "${UIPATH_ORCH_URL}",
-	                orchestratorTenant: "${UIPATH_ORCH_TENANT_NAME}",
-	                folderName: "${UIPATH_ORCH_FOLDER_NAME}",
-	                environments: '',
-	                //credentials: [$class: 'UserPassAuthenticationEntry', credentialsId: 'APIUserKey']
-	                credentials: Token(accountName: "${UIPATH_ORCH_LOGICAL_NAME}", credentialsId: 'FNwIAhRYclw23sdwfQpCmC3BREnrz4v1zcOMBgZaf9_Um'), 
-					traceLevel: 'None',
-					entryPointPaths: 'Main.xaml'
-	
-
-	        )
-	            }
-	        }
-	
-
-	
-
-	         // Deploy to Production Step
-	        stage('Deploy to Production') {
-	            steps {
-	                echo 'Deploy to Production'
-	                }
-	            }
-	    }
+  
 	
 
 	    // Options
@@ -93,21 +63,6 @@ pipeline {
 	    }
 	
 
-	
-
-	    // 
-	    post {
-	        success {
-	            echo 'Deployment has been completed!'
-	        }
-	        failure {
-	          echo "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.JOB_DISPLAY_URL})"
-	        }
-	        always {
-	            /* Clean workspace if success */
-	            cleanWs()
-	        }
-	    }
-	
 
 	}
+}
