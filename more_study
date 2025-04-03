@@ -1,0 +1,476 @@
+can you give shell script to search .jar in fileshare  and bat script to check cli in the path
+Here are both a shell script to search for .jar files on a fileshare and a batch script to check for the UiPath CLI in the system PATH:
+
+1. Shell Script (search_jar_fileshare.sh)
+bash
+Copy
+#!/bin/bash
+
+# Search for JAR files on a fileshare
+# Usage: ./search_jar_fileshare.sh [fileshare_path]
+
+FILESHARE_PATH=${1:-'/path/to/default/fileshare'}
+
+if [ ! -d "$FILESHARE_PATH" ]; then
+    echo "Error: Fileshare path does not exist or is inaccessible: $FILESHARE_PATH"
+    exit 1
+fi
+
+echo "Searching for JAR files in: $FILESHARE_PATH"
+echo "-----------------------------------------"
+
+# Find all .jar files (case insensitive)
+find "$FILESHARE_PATH" -type f -iname "*.jar" -print | while read -r jarfile; do
+    echo "Found: $jarfile"
+    # Optional: Check if specific file exists in the JAR
+    if jar tf "$jarfile" | grep -qi "UiPath.CLI.exe"; then
+        echo "  --> Contains UiPath CLI!"
+    fi
+done
+
+echo "Search complete."
+How to use:
+
+bash
+Copy
+chmod +x search_jar_fileshare.sh
+./search_jar_fileshare.sh //fileserver/jenkins/home/plugins
+2. Batch Script (check_uipath_cli.bat)
+batch
+Copy
+@echo off
+:: Check for UiPath CLI in system PATH
+:: Returns 0 if found, 1 if not found
+
+setlocal enabledelayedexpansion
+
+echo Checking system PATH for UiPath CLI...
+echo.
+
+:: Check common installation paths
+set "paths[0]=C:\Program Files (x86)\UiPath\Studio\UiPath.CLI.exe"
+set "paths[1]=C:\Program Files\UiPath\Studio\UiPath.CLI.exe"
+set "paths[2]=%LOCALAPPDATA%\UiPath\UiPath.CLI.exe"
+
+:: Check each path
+set found=0
+for /l %%i in (0,1,2) do (
+    if exist "!paths[%%i]!" (
+        echo Found at: !paths[%%i]!
+        set found=1
+        goto :result
+    )
+)
+
+:: Check in system PATH
+where UiPath.CLI.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    for /f "delims=" %%i in ('where UiPath.CLI.exe') do (
+        echo Found in PATH: %%i
+        set found=1
+    )
+)
+
+:result
+echo.
+if %found% equ 1 (
+    echo SUCCESS: UiPath CLI is available
+    exit /b 0
+) else (
+    echo ERROR: UiPath CLI not found in standard locations or PATH
+    exit /b 1
+)
+How to use:
+
+batch
+Copy
+check_uipath_cli.bat
+if %errorlevel% equ 0 (
+    echo Proceed with deployment
+) else (
+    echo CLI not found, aborting
+)
+Key Features:
+Shell Script:
+
+Searches recursively through fileshare
+
+Case-insensitive search (*.jar)
+
+Optional check for CLI inside JAR files
+
+Handles spaces in file paths
+
+Returns proper exit codes
+
+Batch Script:
+
+Checks common UiPath installation locations
+
+Searches system PATH using where command
+
+Clear success/failure messaging
+
+Returns proper error levels for scripting
+
+Works in Jenkins pipeline steps
+
+Jenkins Integration Tips:
+For the shell script (Linux agents):
+
+groovy
+Copy
+sh '''
+    chmod +x ./search_jar_fileshare.sh
+    ./search_jar_fileshare.sh "//fileserver/jenkins/home"
+'''
+For the batch script (Windows agents):
+
+groovy
+Copy
+bat '''
+    call check_uipath_cli.bat
+    if %errorlevel% neq 0 (
+        exit /b 1
+    )
+'''
+Would you like me to modify either script for specific requirements in your environment?
+
+can we add shell and bat script in jenkins file so it can continue
+Here's how to integrate both the shell and batch scripts directly into your Jenkinsfile, allowing the pipeline to continue or fail based on the findings:
+
+Jenkinsfile with Integrated Scripts
+groovy
+Copy
+pipeline {
+    agent none
+
+    stages {
+        stage('Search for JAR on Fileshare') {
+            agent {
+                label 'linux' // Use a Linux agent for fileshare search
+            }
+            steps {
+                script {
+                    // Shell script to find JAR files
+                    def jarFiles = sh(script: '''
+                        #!/bin/bash
+                        fileshare="//fileserver/jenkins/home/plugins"
+                        echo "Searching for JAR files in: $fileshare"
+                        find "$fileshare" -type f -iname "*.jar" -print
+                    ''', returnStdout: true).trim()
+
+                    if (jarFiles) {
+                        echo "Found JAR files:\n${jarFiles}"
+                        env.UIPATH_JAR = jarFiles.split('\n')[0] // Use first found JAR
+                    } else {
+                        error "No JAR files found in fileshare"
+                    }
+                }
+            }
+        }
+
+        stage('Check UiPath CLI') {
+            agent {
+                label 'windows' // Use Windows agent for CLI check
+            }
+            steps {
+                script {
+                    // Batch script to verify CLI
+                    def cliPath = bat(script: '''
+                        @echo off
+                        where UiPath.CLI.exe
+                        if %errorlevel% neq 0 (
+                            echo UiPath.CLI.exe NOT found in PATH
+                            exit /b 1
+                        )
+                    ''', returnStdout: true).trim()
+
+                    if (cliPath) {
+                        echo "Found UiPath CLI at: ${cliPath}"
+                        env.UIPATH_CLI = cliPath
+                    } else {
+                        error "UiPath CLI not found - install required"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Orchestrator') {
+            agent {
+                label 'windows'
+            }
+            when {
+                expression { env.UIPATH_CLI != null }
+            }
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'uipath-token', variable: 'ORCHESTRATOR_TOKEN')]) {
+                        bat """
+                            "${env.UIPATH_CLI}" publish ^
+                            --package "HelloWorld.1.0.8.nupkg" ^
+                            --organization your-account ^
+                            --tenant your-tenant ^
+                            --url https://platform.uipath.com ^
+                            --token %ORCHESTRATOR_TOKEN%
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "Pipeline failed - check stage logs for details"
+            // Optional: Send notification
+            // slackSend color: 'danger', message: "UiPath deployment failed: ${currentBuild.fullDisplayName}"
+        }
+        success {
+            echo "Successfully deployed to UiPath Orchestrator"
+            // slackSend color: 'good', message: "UiPath deployed: ${currentBuild.fullDisplayName}"
+        }
+    }
+}
+Key Features:
+Multi-Platform Support:
+
+Uses Linux agent for fileshare search
+
+Uses Windows agent for CLI operations
+
+Error Handling:
+
+Fails pipeline if JAR files not found
+
+Fails pipeline if CLI not installed
+
+Only proceeds to deploy if both checks pass
+
+Variable Passing:
+
+Stores found JAR path in env.UIPATH_JAR
+
+Stores CLI path in env.UIPATH_CLI
+
+Conditional Deployment:
+
+Deployment stage only runs if CLI check succeeds
+
+Alternative Version (All-in-One Windows Agent)
+If you prefer using only Windows agents:
+
+groovy
+Copy
+stage('Search & Check') {
+    agent {
+        label 'windows'
+    }
+    steps {
+        script {
+            // PowerShell search for JAR files
+            def jarFiles = powershell '''
+                $fileshare = "\\\\fileserver\\jenkins\\home\\plugins"
+                Get-ChildItem -Path $fileshare -Recurse -Filter *.jar | Select-Object -ExpandProperty FullName
+            '''
+            
+            // Batch CLI check
+            def cliPath = bat(script: 'where UiPath.CLI.exe', returnStdout: true).trim()
+            
+            if (!jarFiles) error "No JAR files found"
+            if (!cliPath) error "UiPath CLI not found"
+            
+            env.UIPATH_JAR = jarFiles.split('\n')[0]
+            env.UIPATH_CLI = cliPath
+        }
+    }
+}
+Would you like me to adjust any part of this implementation? For example:
+
+Different fileshare path structure
+
+Additional validation steps
+
+Alternative notification methods
+
+Parallel execution of search/check stages
+
+=====================
+
+  not specific bat script dos comand script
+Here's a pure DOS batch script solution (no shell/PowerShell) that you can integrate directly into your Jenkinsfile to:
+
+Search for .jar files on a fileshare
+
+Check for UiPath.CLI.exe in the system
+
+Continue or fail the pipeline based on results
+
+Jenkinsfile with Pure DOS Batch Commands
+groovy
+Copy
+pipeline {
+    agent {
+        label 'windows' // Requires Windows agent
+    }
+
+    stages {
+        stage('Find JAR on Fileshare') {
+            steps {
+                script {
+                    // Search fileshare for JAR files
+                    env.FOUND_JAR = bat(script: '''
+                        @echo off
+                        set FILESHARE=\\fileserver\jenkins\home\plugins
+                        set JAR_FILE=
+
+                        :: Search for first JAR file
+                        for /r "%FILESHARE%" %%f in (*.jar) do (
+                            if not defined JAR_FILE set "JAR_FILE=%%f"
+                        )
+
+                        :: Return result
+                        if defined JAR_FILE (
+                            echo %JAR_FILE%
+                            exit /b 0
+                        ) else (
+                            echo ERROR: No JAR files found
+                            exit /b 1
+                        )
+                    ''', returnStdout: true).trim()
+
+                    if (env.FOUND_JAR.startsWith('ERROR')) {
+                        error env.FOUND_JAR
+                    } else {
+                        echo "Found JAR file: ${env.FOUND_JAR}"
+                    }
+                }
+            }
+        }
+
+        stage('Verify UiPath CLI') {
+            steps {
+                script {
+                    // Check for CLI in system
+                    env.CLI_PATH = bat(script: '''
+                        @echo off
+                        :: Check standard locations
+                        set CLI_PATHS=(
+                            "C:\Program Files (x86)\UiPath\Studio\UiPath.CLI.exe"
+                            "C:\Program Files\UiPath\Studio\UiPath.CLI.exe"
+                            "%LOCALAPPDATA%\UiPath\UiPath.CLI.exe"
+                        )
+
+                        :: Check each path
+                        for %%p in (%CLI_PATHS%) do (
+                            if exist "%%~p" (
+                                echo %%~p
+                                exit /b 0
+                            )
+                        )
+
+                        :: Check PATH
+                        where UiPath.CLI.exe >nul 2>&1
+                        if %errorlevel% == 0 (
+                            for /f "delims=" %%c in ('where UiPath.CLI.exe') do (
+                                echo %%c
+                                exit /b 0
+                            )
+                        )
+
+                        echo ERROR: UiPath CLI not found
+                        exit /b 1
+                    ''', returnStdout: true).trim()
+
+                    if (env.CLI_PATH.startsWith('ERROR')) {
+                        error env.CLI_PATH
+                    } else {
+                        echo "Found CLI at: ${env.CLI_PATH}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Package') {
+            when {
+                expression { env.CLI_PATH != null && !env.CLI_PATH.startsWith('ERROR') }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'uipath-token', variable: 'TOKEN')]) {
+                    bat """
+                        "@${env.CLI_PATH}" publish ^
+                        --package "HelloWorld.1.0.8.nupkg" ^
+                        --organization your-account ^
+                        --tenant your-tenant ^
+                        --url https://platform.uipath.com ^
+                        --token %TOKEN%
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "Pipeline failed - check stage logs"
+            // bat 'echo "Failure notification" | mail -s "Pipeline Failed" team@example.com'
+        }
+        success {
+            echo "Deployment successful"
+        }
+    }
+}
+Key DOS Batch Features:
+Fileshare Search:
+
+Uses for /r recursive search
+
+Returns first found JAR file path
+
+Fails if no JAR found (exit code 1)
+
+CLI Verification:
+
+Checks 3 standard install locations
+
+Falls back to where command for PATH search
+
+Returns full path of first found CLI
+
+Error Handling:
+
+Each stage fails if required component missing
+
+Clear error messages in Jenkins console
+
+Jenkins Integration:
+
+Sets environment variables (FOUND_JAR, CLI_PATH)
+
+Only proceeds to deploy if both checks pass
+
+Uses credential binding for Orchestrator token
+
+To Customize This:
+Change Fileshare Path:
+
+batch
+Copy
+set FILESHARE=\\your-server\your-share\path
+Add More Search Locations:
+
+batch
+Copy
+set CLI_PATHS=(
+    "C:\Custom\Path\UiPath.CLI.exe"
+    "D:\Alternate\Location\UiPath.CLI.exe"
+    ...
+)
+Add Debug Output:
+
+batch
+Copy
+echo Searching in: %FILESHARE%
+dir "%FILESHARE%\*.jar" /s
+This implementation uses only native DOS batch commands and will work on any Windows Jenkins agent without requiring additional tools.
+
