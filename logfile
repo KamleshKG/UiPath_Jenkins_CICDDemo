@@ -1,0 +1,85 @@
+Started by user admin
+Obtained Jenkinsfile from git https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo # timeout=10
+Fetching upstream changes from https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.40.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/master^{commit}" # timeout=10
+Checking out Revision 2e4458792fb26b8ca208bca469ade98063589861 (refs/remotes/origin/master)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f 2e4458792fb26b8ca208bca469ade98063589861 # timeout=10
+Commit message: "Update Main.xaml"
+ > git.exe rev-list --no-walk 6f5f733a00faff09add45467f985fef475d3b39c # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Preparing)
+[Pipeline] echo
+Jenkins Home C:\ProgramData\Jenkins\.jenkins
+[Pipeline] echo
+Jenkins URL http://localhost:8080/
+[Pipeline] echo
+Jenkins JOB Number 8
+[Pipeline] echo
+Jenkins JOB Name uipathtest
+[Pipeline] echo
+GitHub BranhName null
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git.exe rev-parse --resolve-git-dir C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest\.git # timeout=10
+Fetching changes from the remote Git repository
+ > git.exe config remote.origin.url https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo # timeout=10
+Fetching upstream changes from https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo
+ > git.exe --version # timeout=10
+ > git --version # 'git version 2.40.0.windows.1'
+ > git.exe fetch --tags --force --progress -- https://github.com/KamleshKG/UiPath_Jenkins_CICDDemo +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git.exe rev-parse "refs/remotes/origin/master^{commit}" # timeout=10
+Checking out Revision 2e4458792fb26b8ca208bca469ade98063589861 (refs/remotes/origin/master)
+ > git.exe config core.sparsecheckout # timeout=10
+ > git.exe checkout -f 2e4458792fb26b8ca208bca469ade98063589861 # timeout=10
+Commit message: "Update Main.xaml"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build)
+[Pipeline] echo
+Building..with C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest
+[Pipeline] UiPathPack
+[tools] $ dotnet C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest\CLI\cached\UiPath.CLI.Windows\24.10.9050.17872\tools\uipcli.dll --version
+[tools] $ dotnet C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest\CLI\cached\UiPath.CLI.Windows\24.10.9050.17872\tools\uipcli.dll run C:\ProgramData\Jenkins\.jenkins\workspace\uipathtest@tmp\uipcliargs5849643107724626480
+uipcli: Data collection is enabled. For more information, please visit https://docs.uipath.com/automation-ops/automation-cloud/latest/user-guide/uipath-command-line-interface
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Test)
+[Pipeline] echo
+Testing..the workflow...
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
