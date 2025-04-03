@@ -93,3 +93,102 @@ pipeline {
         }
     }
 }
+
+
+
+You're very welcome! 😊 I'm glad I could help with the Jenkins pipeline for your UiPath deployment.
+
+When you try it out, here's what to watch for:
+
+File Server Access: Ensure Jenkins has proper permissions to read from \\fileserver\jenkins\home\plugins\uipath
+
+CLI Extraction: Verify the JAR contains UiPath.CLI.exe in the expected location
+
+Path Handling: Double-check Windows path formatting in the batch commands
+
+If you encounter any issues, these might help:
+
+For permission errors, check the Jenkins service account has network access
+
+For missing CLI errors, confirm the exact structure of your plugin JAR
+
+For path problems, add a debug step to echo the resolved paths:
+
+groovy
+Copy
+echo "Resolved CLI path: ${env.UIPATH_CLI}"
+I'd be happy to help troubleshoot if you run into any snags - just share:
+
+The error message you're seeing
+
+Which stage it fails at
+
+Any relevant logs (sanitized if sensitive)
+
+Looking forward to hearing how it goes! Your automation success is what makes this worthwhile. 🚀
+
+[Whenever you're ready to test or need adjustments, just let me know!]
+
+
+++++++++++++++++++++++++++++++++++++++
+
+Key Components of This Solution
+File Server Access:
+
+Uses UNC paths (\\fileserver\jenkins\home) to access the JAR
+
+Copies the file to local workspace before processing
+
+JAR Extraction:
+
+Uses jar xf command to extract the plugin JAR
+
+Searches for the CLI executable in extracted files
+
+Path Handling:
+
+Properly escapes Windows paths in batch commands
+
+Uses temporary directories in the workspace
+
+Cleanup:
+
+Removes extracted files after pipeline completes
+
+Alternative Approach (If CLI is Packaged Differently)
+If the plugin contains the CLI in a different format (e.g., zip within the JAR):
+
+groovy
+Copy
+stage('Extract CLI') {
+    steps {
+        script {
+            // Extract the inner zip/package
+            bat """
+                cd "${LOCAL_PLUGIN_DIR}"
+                jar xf uipath-plugin.jar uipath-cli.zip
+                unzip -o uipath-cli.zip -d "${LOCAL_CLI_DIR}"
+            """
+            
+            // Find the CLI in the extracted files
+            def cliPath = bat(script: "@echo off && dir /s/b \"${LOCAL_CLI_DIR}\\UiPath.CLI.exe\"", returnStdout: true).trim()
+            env.UIPATH_CLI = cliPath ?: "${LOCAL_CLI_DIR}\\UiPath.CLI.exe"
+        }
+    }
+}
+Requirements
+On Jenkins Controller:
+
+Java installed (for jar command)
+
+Unzip utility (if using zip files)
+
+Network access to file server
+
+On File Server:
+
+Proper permissions for Jenkins service account to access files
+
+Consistent network path available to all agents
+
+Would you like me to modify any part of this solution to better match your specific file server structure or security requirements?
