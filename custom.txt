@@ -1,0 +1,95 @@
+pipeline {
+    agent {
+        label 'windows' // Ensure this runs on a Windows agent
+    }
+
+    environment {
+        // File server paths (adjust to your environment)
+        JENKINS_HOME = '\\\\fileserver\\jenkins\\home'
+        UIPATH_PLUGIN_DIR = "${JENKINS_HOME}\\plugins\\uipath"
+        UIPATH_PLUGIN_JAR = "${UIPATH_PLUGIN_DIR}\\uipath-plugin.jar"
+        
+        // Local workspace paths
+        LOCAL_PLUGIN_DIR = "${env.WORKSPACE}\\uipath-temp"
+        LOCAL_CLI_DIR = "${env.WORKSPACE}\\uipath-cli"
+    }
+
+    stages {
+        stage('Prepare Environment') {
+            steps {
+                script {
+                    // Create local directories
+                    bat """
+                        if not exist "${LOCAL_PLUGIN_DIR}" mkdir "${LOCAL_PLUGIN_DIR}"
+                        if not exist "${LOCAL_CLI_DIR}" mkdir "${LOCAL_CLI_DIR}"
+                    """
+                }
+            }
+        }
+
+        stage('Copy & Extract Plugin') {
+            steps {
+                script {
+                    // Copy JAR from file server to local workspace
+                    bat """
+                        xcopy /Y "${UIPATH_PLUGIN_JAR}" "${LOCAL_PLUGIN_DIR}\\"
+                    """
+
+                    // Verify the JAR was copied
+                    if (!fileExists("${LOCAL_PLUGIN_DIR}\\uipath-plugin.jar")) {
+                        error("Failed to copy plugin JAR from file server")
+                    }
+
+                    // Extract the JAR (assuming it contains the CLI)
+                    bat """
+                        cd "${LOCAL_PLUGIN_DIR}"
+                        jar xf uipath-plugin.jar
+                    """
+
+                    // Find the extracted CLI executable
+                    def cliPath = bat(script: "@echo off && dir /s/b \"${LOCAL_PLUGIN_DIR}\\UiPath.CLI.exe\"", returnStdout: true).trim()
+                    
+                    if (!cliPath) {
+                        error("UiPath CLI not found in extracted plugin")
+                    } else {
+                        env.UIPATH_CLI = cliPath
+                        echo "Found UiPath CLI at: ${env.UIPATH_CLI}"
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Package') {
+            steps {
+                script {
+                    // Verify package exists (adjust path as needed)
+                    def packagePath = "${env.WORKSPACE}\\HelloWorld.1.0.8.nupkg"
+                    if (!fileExists(packagePath)) {
+                        error("Package not found: ${packagePath}")
+                    }
+
+                    withCredentials([string(credentialsId: 'uipath-orchestrator-token', variable: 'ORCHESTRATOR_TOKEN')]) {
+                        bat """
+                            "${env.UIPATH_CLI}" publish ^
+                            --package "${packagePath}" ^
+                            --organization your-account ^
+                            --tenant your-tenant ^
+                            --url https://platform.uipath.com ^
+                            --token %ORCHESTRATOR_TOKEN%
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up extracted files
+            bat """
+                if exist "${LOCAL_PLUGIN_DIR}" rmdir /s /q "${LOCAL_PLUGIN_DIR}"
+                if exist "${LOCAL_CLI_DIR}" rmdir /s /q "${LOCAL_CLI_DIR}"
+            """
+        }
+    }
+}
